@@ -2,84 +2,8 @@
 # install.packages("remotes")
 # remotes::install_github("jeffreyevans/rfUtilities")
 # install.packages("rfUtilities")
-library(rfUtilities)
-library(caret)
-library(pROC)
-library(remotes)
-set.seed(10001)
 dir.create("output/randomforest_yjl",showWarnings = F)
 out_dir <- "output/randomforest_yjl/"
-
-phyloseqin_used <- subset_samples(phyloseqin,class %in% c("control","positive"))
-tmp_otu <- as.data.frame(otu_table(phyloseqin_used))
-tmp_meta <- metadatadf %>% dplyr::select(ID,class)
-identical(tmp_meta$ID,colnames(tmp_otu))
-colnames(tmp_meta) <- c("sample","class")
-tmp_otu <- noise_removal(tmp_otu,percent=0.1)#, method = "pre_cut"
-tmp_otu <- sweep(tmp_otu,2,colSums(tmp_otu),"/") * 100
-tmp_data <- as.data.frame(t(tmp_otu))
-tmp_data$sample <- row.names(tmp_data)
-library(dplyr)
-tmp_data <- inner_join(tmp_data,tmp_meta,by="sample") 
-row.names(tmp_data) <- tmp_data$sample
-tmp_data <- tmp_data %>% dplyr::select(!sample)
-
-tmp_train_use <- sample(nrow(tmp_data), nrow(tmp_data)*0.7)
-tmp_data_train <- tmp_data[tmp_train_use,]
-
-#install.packages("randomForest")
-library(randomForest)
-tmp_errrate <- c(1)
-for(i in 1:ncol(tmp_data_train)-1){
-  tmp_model <- randomForest(x=tmp_data_train[,1:(ncol(tmp_data_train)-1)] , 
-                            y=factor(tmp_data_train$class),
-                            ntree=1000, 
-                            importance=TRUE, 
-                            proximity=TRUE, 
-                            mtry=i,
-                            na.action=na.omit)
-  tmp_err<-mean(tmp_model$err.rate)
-  tmp_errrate[i] <- mean(tmp_err)
-}#使用随机森林算法对 tmp_data_train 数据集进行多次建模，并根据模型复杂度（由 mtry 参数控制）评估模型性能的过程
-which.min(tmp_errrate)
-model_classify <- randomForest(x=tmp_data_train[,1:(ncol(tmp_data_train)-1)] , 
-                               y=factor(tmp_data_train$class),
-                               ntree=1000, 
-                               importance=TRUE, 
-                               proximity=TRUE, 
-                               replace = TRUE,
-                               mtry=which.min(tmp_errrate),
-                               na.action=na.omit
-)
-plot(model_classify)
-model_classify2 <- randomForest(x=tmp_data_train[,1:(ncol(tmp_data_train)-1)] , 
-                                y=factor(tmp_data_train$class),
-                                ntree=1000, 
-                                importance=TRUE, 
-                                proximity =TRUE, 
-                                replace = TRUE,
-                                mtry=which.min(tmp_errrate),
-                                na.action=na.omit,
-                                oob_score=TRUE
-)
-model_imp <- importance(model_classify2)
-model_imp <- data.frame(predictors = rownames(model_imp), model_imp)
-model_imp_sort <- arrange(model_imp, desc(MeanDecreaseAccuracy))
-#model_imp_sort_20 <- model_imp_sort[1:45,]
-#model_imp_sort_20$predictors <- gsub("s__","",model_imp_sort_20$predictors)
-#install.packages("rfPermute")
-library("rfPermute")
-model_classify_pm <- rfPermute(x=tmp_data_train[,1:(ncol(tmp_data_train)-1)] , 
-                               y=factor(tmp_data_train$class),
-                               ntree=1000, 
-                               importance=TRUE, 
-                               proximity =TRUE, 
-                               replace = TRUE,
-                               mtry=which.min(tmp_errrate),
-                               na.action=na.omit,
-                               oob_score=TRUE
-)
-
 
 rm(list=ls())
 library(tidyverse)
@@ -422,15 +346,17 @@ model_imp_best <- model_imp_sort[model_imp_sort$MeanDecreaseAccuracy>2 & model_i
 #model_imp_best <- model_imp_best[1:28,] 
 #tmp_data_train_f <- tmp_data_train[,c(model_imp_best$predictors,"groups")] 
 
-tmp_train_use2 <- sample(nrow(tmp_data), nrow(tmp_data)*0.7)
-tmp_data_train_f <- tmp_data[tmp_train_use2,c(model_imp_best$predictors,"class")]
-tmp_data_pre <- tmp_data[! row.names(tmp_data) %in% row.names(tmp_data_train_f),]
+
+
+tmp_data_train<-  tmp_data[ row.names(tmp_data) %in% row.names(tmp_data_train),]
+tmp_data_train_f <- tmp_data[row.names(tmp_data) %in% row.names(tmp_data_train_f),c(model_imp_best$predictors,"class")]
+tmp_data_pre <- tmp_data[! row.names(tmp_data) %in% row.names(tmp_data_train),]
 tmp_data_pre_f <- tmp_data[! row.names(tmp_data) %in% row.names(tmp_data_train_f),c(model_imp_best$predictors,"class")]
 
 model_train_2 <- randomForest(x = tmp_data_train_f[,1:(ncol(tmp_data_train_f)-1)],
                               y = factor(tmp_data_train_f$class,levels = group[c(1,2)]),
-                              ntree=1000, 
-                              importance=TRUE, 
+                              ntree=1000,
+                              importance=TRUE,
                               proximity=TRUE,
                               mtry = 20
 )
@@ -471,7 +397,9 @@ train_roc <- roc(factor(tmp_data_train_f$class,levels = group[c(1,2)]),
                  ci =TRUE,
                  conf.level =0.95
 )
-
+library(pROC)
+ci.auc(test_roc, method="bootstrap", boot.n=2000)
+ci.auc(train_roc, method="bootstrap", boot.n=2000)
 roc_with_ci <- function(obj,color_p) {
   ciobj <- ci.se(obj, specificities = seq(0, 1, l = 20))
   dat.ci <- data.frame(x = as.numeric(rownames(ciobj)),
@@ -505,3 +433,4 @@ save(model_train_2,
      file = "rf.Rdata")
 save(mphlanin, file = "mphlanin.RData")
 save(metadatadf, file = "metadatadf.monkey.RData")
+
