@@ -120,7 +120,7 @@ meco_pathway_metacyc_diff <- trans_diff$new(meco_pathway_metacyc,
                                             #reference = c("Type,Health"),fixed_effects = c("Type","Sex")
 )
 color7 <- c("#5E6A8B","#b80422")
-meco_pathway_metacyc_diff$plot_diff_bar(use_number = 1:30)+
+meco_pathway_metacyc_diff$plot_diff_bar(use_number = 1:30,threshold = 2)+
   theme_bw()+
   theme(panel.grid = element_blank())+
   scale_color_manual(values =color5)+
