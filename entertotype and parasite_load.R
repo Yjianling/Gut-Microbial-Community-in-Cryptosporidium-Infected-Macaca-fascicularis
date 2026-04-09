@@ -1,5 +1,4 @@
 #entertotype
-#肠型entertotype
 dist.JSD <- function(inMatrix, pseudocount=0.000001, ...) {
   KLD <- function(x,y) sum(x *log(x/y))
   JSD<- function(x,y) sqrt(0.5 * KLD(x, (x+y)/2) + 0.5 * KLD(y, (x+y)/2))
@@ -23,12 +22,12 @@ pam.clustering=function(x,k) { # x is a distance matrix and k the number of clus
   require(cluster)
   cluster = as.vector(pam(as.dist(x), k, diss=TRUE)$clustering)
   return(cluster)
-}#是一个用于执行基于距离矩阵的K中心点聚类（K-Medoids聚类）的R语言函数
+}
 pam.medoids=function(x,k) {
   require(cluster)
   medoids = as.vector(pam(as.dist(x), k, diss=TRUE)$medoids)
   return(medoids)
-}#用于计算两个概率分布之间的Jensen-Shannon距离（JSD），并且使用PAM聚类算法（Partitioning Around Medoids）来进行数据聚类。
+}
 library(ade4)
 library(aPCoA)
 library(cluster)
@@ -86,9 +85,9 @@ ggplot(tmp_ncluster_d,aes(x = n,y = ch))+
 ggsave2("cluster_number.pdf",width = 6,height = 5)
 #将聚类结果整合到元数据
 k_best = which(tmp_nclusters == max(tmp_nclusters), arr.ind = TRUE)
-tmp_cluster=pam.clustering(tmp_jsd, k = k_best)#执行PAM聚类
-tmp_medoids=pam.medoids(tmp_jsd, k = k_best)#找到PAM聚类的中心点
-tmp_silhouette=mean(silhouette(tmp_cluster, tmp_jsd)[,3])#计算轮廓系数的平均值，接近1好，负值不好。
+tmp_cluster=pam.clustering(tmp_jsd, k = k_best)
+tmp_medoids=pam.medoids(tmp_jsd, k = k_best)
+tmp_silhouette=mean(silhouette(tmp_cluster, tmp_jsd)[,3])
 cat(tmp_silhouette)
 tmp_meta$enterotype <- tmp_cluster
 tmp_meta$enterotype <- ifelse(tmp_meta$enterotype == 1,"ET1","ET2")
@@ -96,8 +95,8 @@ tmp_jsd_data <- as.data.frame(as.matrix(tmp_jsd))
 identical(row.names(tmp_jsd_data),tmp_meta$ID)
 tmp_jsd_data$class <- tmp_meta$enterotype
 
-tmp_pca=dudi.pca(as.data.frame(t(tmp_otu_genus)), scannf=F, nf=10)#执行主成分分析
-tmp_bet=bca(tmp_pca, fac=as.factor(tmp_cluster), scannf=F, nf=2) #执行置换多元方差分析
+tmp_pca=dudi.pca(as.data.frame(t(tmp_otu_genus)), scannf=F, nf=10)
+tmp_bet=bca(tmp_pca, fac=as.factor(tmp_cluster), scannf=F, nf=2) 
 tmp_bet_res <- as.data.frame(t(tmp_bet$tab))
 tmp_bet_res$taxon = row.names(tmp_bet_res)
 
@@ -136,12 +135,12 @@ ggplot(data=tmp_res1 ,aes(x=PC1,y=PC2,color=enterotype))+
   scale_fill_manual(values = color6)+
   scale_color_manual(values = color6)+
   theme(text = element_text(face = "bold"),
-    panel.background = element_blank(),         # 去除背景
-    panel.grid.major = element_blank(),         # 去除主网格线
-    panel.grid.minor = element_blank(),         # 去除次网格线
-    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), # 显示外边框
+    panel.background = element_blank(),         
+    panel.grid.major = element_blank(),         
+    panel.grid.minor = element_blank(),         
+    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), 
     strip.background = element_blank()
-    # legend.position = "none"  # 如需要隐藏图例可启用
+    # legend.position = "none"  
   )
 ggsave("et.pcoa.pdf")
 #箱线图
@@ -385,10 +384,8 @@ plot_alpha <- function(data, index_name, ylab_name){
     )
 }
 
-# 只筛 ET1
 data_ET2 <- data_ET %>% filter(enterotype == "ET2")
 
-# 三个图
 p1 <- plot_alpha(data_ET2, "shannon", "Shannon index")
 p2 <- plot_alpha(data_ET2, "pielou", "Pielou index")
 p3 <- plot_alpha(data_ET2, "simpson", "Simpson index")
@@ -398,12 +395,11 @@ title <- ggdraw() +
   draw_label(paste0("Enterotype 2"),
              fontface = 'bold', size = 16)
 plot_grid(title, p_all, ncol = 1, rel_heights = c(0.1, 1))
-# 保存
 ggsave("ET2_alpha_diversity.pdf", width = 8, height = 4)
-####
+
 tmp_meta <- tmp_meta %>% mutate(parasite_load = as.numeric(parasite_load))
 tmp_meta$log_parasite <- log1p(tmp_meta$parasite_load)
-#载虫量箱线图
+
 ggplot(tmp_meta %>% filter(class == "positive"),aes(x = enterotype, y =parasite_load,color = enterotype))+
   geom_boxplot(aes(y=parasite_load,fill = enterotype),outlier.shape = NA,alpha = 0.4)+
   geom_jitter(size = 3,width = 0.2,height = 0)+
