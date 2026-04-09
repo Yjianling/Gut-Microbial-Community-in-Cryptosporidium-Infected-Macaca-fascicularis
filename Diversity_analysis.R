@@ -165,27 +165,59 @@ tmp_type <- factor(phyloseqin@sam_data$class,levels = c("control","positive"))
 tmp_load <- as.numeric(phyloseqin@sam_data$parasite_load)
 tmp_shannon <- vegan::diversity(t(tmp_otu),index = "shannon")
 tmp_simpson <-  vegan::diversity(t(tmp_otu),index = "simpson")
-tmp_invsimpson <- 1/tmp_simpson
+Pielou<-evenness(phyloseqin,index = "pielou", zeroes = TRUE, detection = 0)
 data_alpha_raw <- data.frame(sample=tmp_sample
                                ,shannon=tmp_shannon
                                ,simpson=tmp_simpson
                                ,invsimpson=tmp_invsimpson
+                             ,Pielou=Pielou
                                ,type=tmp_type
                              ,load_p=tmp_load
 )
+data_alpha <- data.frame(sample=tmp_sample
+                               ,shannon=tmp_shannon
+                               ,simpson=tmp_simpson
+                               ,invsimpson=tmp_invsimpson
+                             ,pielou=Pielou
+                               ,type=tmp_type)
 library(ggpubr)
 library(cowplot)
-ggplot(data_alpha_raw,aes(x=type,y=shannon))+
+
+pielou <- ggplot(data_alpha,aes(x=type,y=pielou))+
   geom_boxplot(aes(fill = type),alpha=0.4,outlier.shape =NA)+
   geom_jitter(aes(color = type, shape = type), height = 0, width = 0.3, size = 3,alpha=0.8) + 
   theme_cowplot()+
   theme(
     axis.title.x = element_blank(),
     legend.position = "none",
-    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14), 
-    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14), 
+    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整X轴标签字体大小
+    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整Y轴标签字体大小
     panel.grid.minor = element_blank(),
     panel.grid.major = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), # 显示外边框
+    text = element_text(size =15,face = "bold"),
+    plot.title = element_text(hjust = 0.5, margin = margin(t = 10, b = 20, unit = "pt"), size = 15)  # 调整标题字体大小
+  ) +
+  scale_color_manual(values =color1) +
+  scale_fill_manual(values = color1)+
+  labs(y ="Pielou index") +
+  stat_compare_means(
+    comparisons = list(c("control", "positive")),
+    method = "wilcox.test", label = "p.signif"
+  )
+ggsave("alpha-Pielou.pdf",width = 4,height = 5)
+shannon <- ggplot(data_alpha_raw,aes(x=type,y=shannon))+
+  geom_boxplot(aes(fill = type),alpha=0.4,outlier.shape =NA)+
+  geom_jitter(aes(color = type, shape = type), height = 0, width = 0.3, size = 3,alpha=0.8) + 
+  theme_cowplot()+
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = "none",
+    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整X轴标签字体大小
+    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整Y轴标签字体大小
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), # 显示外边框
     text = element_text(size =15,face = "bold"),
     plot.title = element_text(hjust = 0.5, margin = margin(t = 10, b = 20, unit = "pt"), size = 15)  # 调整标题字体大小
   ) +
@@ -197,17 +229,18 @@ ggplot(data_alpha_raw,aes(x=type,y=shannon))+
     method = "wilcox.test", label = "p.signif"
   )
 ggsave("alpha-shannon.pdf",width = 4,height = 5)
-ggplot(data_alpha_raw,aes(x=type,y=simpson)) + 
+simpson <- ggplot(data_alpha_raw,aes(x=type,y=simpson)) + 
   geom_boxplot(aes(fill = type),alpha=0.4,outlier.shape =NA)+
   geom_jitter(aes(color = type, shape = type), height = 0, width = 0.3, size = 3,alpha=0.8) + 
   theme_cowplot()+
   theme(
     axis.title.x = element_blank(),
     legend.position = "none",
-    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14), 
-    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14), 
+    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整X轴标签字体大小
+    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整Y轴标签字体大小
     panel.grid.minor = element_blank(),
     panel.grid.major = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), # 显示外边框
     text = element_text(size =15,face = "bold"),
     plot.title = element_text(hjust = 0.5, margin = margin(t = 10, b = 20, unit = "pt"), size = 15)  # 调整标题字体大小
   ) +
@@ -225,8 +258,8 @@ ggplot(data_alpha_raw,aes(x=type,y=invsimpson)) +
   theme(
     axis.title.x = element_blank(),
     legend.position = "none",
-    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14),  
-    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14), 
+    axis.text.x = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整X轴标签字体大小
+    axis.text.y = element_text(vjust = 0.5, hjust = 0.5, size = 14),  # 调整Y轴标签字体大小
     panel.grid.minor = element_blank(),
     panel.grid.major = element_blank(),
     text = element_text(size =15,face = "bold"),
@@ -239,8 +272,15 @@ ggplot(data_alpha_raw,aes(x=type,y=invsimpson)) +
     comparisons = list(c("control","positive")),
     method = "wilcox.test", label = "p.signif")
 ggsave("alpha-invsimpson.pdf",width = 4,height = 5)
+pielou <- pielou + ggtitle("Pielou")
+shannon <- shannon + ggtitle("Shannon")
+simpson <- simpson + ggtitle("Simpson")
+figure.alpha_diversity<-ggarrange(shannon,pielou,simpson,ncol = 3)
+pdf("Figure.alpha_diversity.pdf",height=5,width=8,useDingbats=FALSE)
+figure.alpha_diversity
+dev.off()
 ##-----------
-##beta diversity
+##感染隐孢子虫与未感染的beta diversity
 ##-------------------
 sample_data(phyloseqin)$ID<-row.names(sample_data(phyloseqin))
 phyloseqin.pcoa <- transform_sample_counts(phyloseqin, function(x) x/sum(x) * 100)
@@ -339,117 +379,125 @@ p4 <- ggplot(plotdata.group, aes(PC1, PC2)) +
 p5 <-p1+p4+p2+p3+plot_layout(heights = c(1,4),widths = c(5,1),ncol = 2,nrow = 2)
 p5
 ggsave("beta_PERMANOVA.pdf",p5,height =10,width = 12)
-library(vegan)
-library(aPCoA)
-library(factoextra)
-library(microbiome)
-library(microbiomeSeq)
-library(pheatmap)
-merge_samples_mean <- function(physeq, group){
-  group_sums <- as.matrix(table(sample_data(physeq)[ ,group]))[,1]
-  merged <- merge_samples(physeq, group)
-  x <- as.matrix(otu_table(merged))
-  if(taxa_are_rows(merged)){ x<-t(x) }
-  out <- t(x/group_sums)
-  out <- otu_table(out, taxa_are_rows = TRUE)
-  otu_table(merged) <- out
-  return(merged)
-}
-library(phyloseq)
-tmp_data_bar <- merge_samples_mean(phyloseqin,"class")
-tmp_data_bar_count <- transform_sample_counts(tmp_data_bar, function(x) x/sum(x) * 100)
-tmp_data_bar_count<-tax_glom(tmp_data_bar_count, 'Phylum', NArm = T)
-tmp_data_bar_count@sam_data$class<- factor(tmp_data_bar_count@sam_data$class,levels = c("control","positive"))
-color_bar<-sample(c("#51574a","#74a993","#447c69","#8e8c6d","#e4bf80","#e9d78e","#e2975d","#f19670","#e16552","#be5168","#c94a53","#cf89a9","#993767","#4e2472","#9163b6","#05387d","#5698c4","#9abf88","#328c97","#7c9fb0"),19)
+#top 10 phylum & genus
+#食蟹猴感染与未感染门水平相对丰度堆叠柱状图
+#library(mecodev)
+library("microeco")
+library(file2meco)
+library(cowplot)
+library(ggplot2)
+phyloseqin
+#mycol1 <-c("#1D2FA1","#5061D0","#22755A","#099B8C","#328c97","#AF5D33","#F48248","#F4A076","#e16552","#c04a53","#995168")
+mycol1 <- c("#A3B18A","#5B8E4D","#93B7BE","#3C6E71","#E0A458","#C57B57","#6D4C3D","#DAD7CD","#BCB8B1","#8E9AAF","#2E4A62")
+meco_physeq1 <- phyloseq2meco(phyloseqin)
+Phylum <- trans_abund$new(dataset = meco_physeq1, taxrank = "Phylum", ntaxa = 10, groupmean ="class")
+Phylum.plot <- Phylum$plot_bar(others_color = rev(mycol1), legend_text_italic = FALSE)+
+  theme_classic() + 
+  ylim(c(0,101)) +ylab('Mean Relative Abundance Ratio (%)')+
+  theme_cowplot()+ 
+  theme(legend.key=element_blank())+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.title.y = element_text(hjust = 0.5, face = "bold",size = 12))
 
-plot_bar(tmp_data_bar_count, fill='Phylum')+
-  geom_bar(stat="identity", position = 'fill',color ="transparent")+
-  xlab("") +
-  ylab("Relative Abundance") +
-  theme_classic(base_size = 10) +
-  scale_y_continuous(expand = c(0,0)) +
-  ggtitle('Phylum') +
-  guides(fill=guide_legend(title=NULL)) +
-  theme(axis.text.x=element_text(angle=45,vjust=1, hjust=1),
-        legend.key.size = unit(10, "pt"))+
-  guides(fill = guide_legend( ncol = 1, byrow = TRUE))+
-  scale_fill_manual(values=c("#51574a","#74a993","#447c69","#8e8c6d","#e4bf80","#e9d78e","#e2975d","#f19670","#e16552","#be5168","#c94a53","#cf89a9","#993767","#4e2472","#9163b6","#05387d","#5698c4","#9abf88","#328c97","#7c9fb0"))+
-  theme(legend.text = element_text(size = 8),text = element_text(face = "bold"))+
-theme(axis.text.x = element_text(size = 12))
-ggsave2("phylum.relative.abundance.pdf",height =6,width = 5,useDingbats=FALSE)
-# 提取物种丰度矩阵
-otu_matrix <- otu_table(tmp_data_bar_count)
-# 提取样本数据
-sample_data_df <- data.frame(sample_data(tmp_data_bar_count))
-# 提取分类信息
-tax_table_df <- data.frame(tax_table(tmp_data_bar_count))
+pdf("Figure.bar.group.phylum.pdf",height=5,width=5)
+Phylum.plot 
+dev.off()
 
-# 将 OTU 矩阵转换为长格式数据框
-library(reshape2)
-otu_long <- melt(otu_matrix)
-colnames(otu_long) <- c("OTU", "Sample", "Abundance")
+Genus.10 <- trans_abund$new(dataset = meco_physeq1, taxrank = "Genus", ntaxa = 10, groupmean = "class")
+Genus.10.plot <- Genus.10$plot_bar(others_color = rev(mycol1), legend_text_italic = FALSE)+
+  theme_classic() +
+  ylim(c(0,101)) +
+  ylab('Mean Relative Abundance Ratio (%)')+
+  theme_cowplot()+ 
+  theme(legend.key=element_blank())+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.title.y = element_text(hjust = 0.5, face = "bold",size = 12),
+        plot.title = element_text(hjust = 0.5, face = "bold"))
 
-# 合并分类信息和样本数据
-otu_long <- merge(otu_long, tax_table_df, by.x = "OTU", by.y = 0)
-otu_long <- merge(otu_long, sample_data_df, by.x = "Sample", by.y = 0)
-otu_long$sample <- "sample"
+pdf("Figure.bar.group.genus.top10.pdf",height=5,width=5)
+Genus.10.plot 
+dev.off()
+#统计
+tax_df <- as.data.frame(tax_table(phyloseqin))
 
-# 绘制柱状图
-ggplot(otu_long, aes(x=sample,y=Abundance,fill = Phylum)) +
-  geom_bar(stat = "identity", position = "fill", color = "transparent") +
-  xlab("") +
-  ylab("") +
-  theme_classic(base_size = 10) +
-  scale_y_continuous(expand = c(0, 0)) +
-  ggtitle('Phylum') +
-  guides(fill = guide_legend(title = NULL)) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 12),
-        legend.key.size = unit(10, "pt"),
-        legend.text = element_text(size = 8)) +
-  guides(fill = guide_legend(ncol = 1, byrow = TRUE)) +
-  scale_fill_manual(values=c("#51574a","#74a993","#447c69","#8e8c6d","#e4bf80","#e9d78e","#e2975d","#f19670","#e16552","#be5168","#c94a53","#cf89a9","#993767","#4e2472","#9163b6","#05387d","#5698c4","#9abf88","#328c97","#7c9fb0"))
-#TOP6 门水平
-library(dplyr)
-#install.packages("tidyverse")
-library(tidyverse) 
-mphlanin_used <- read.delim("input/mphlanin_used.txt", header=TRUE, sep = "\t")
-rownames(mphlanin_used)<-mphlanin_used[,1]
-mphlanin_used<-mphlanin_used[,-1]
-mphlanin_used1<-rownames_to_column(mphlanin_used)
-mphlanin_used1<-gsub(".*\\|p","",mphlanin_used1$rowname)
-mphlanin_used1<-as.data.frame(mphlanin_used1)
-mphlanin_used1<-gsub("\\|c_.*","",mphlanin_used1$mphlanin_used1)
-mphlanin_used1<-as.data.frame(mphlanin_used1)                            
-mphlanin_used1<-cbind(mphlanin_used1,mphlanin_used)                 
-box_phylum<-aggregate(mphlanin_used1[, 2:41], list(mphlanin_used1=mphlanin_used1$mphlanin_used1),sum)
-#修改第一列列名的操作：
-colnames(box_phylum)[1] <- "Phylum"
-box_phylum<-t(box_phylum)
-col1<-box_phylum[1,]
-colnames(box_phylum)<-col1
-box_phylum<-box_phylum[-1,]
-box_phylum<-as.data.frame(box_phylum)
-box_phylum$sample<-rownames(box_phylum)
-library("writexl")
-#write_xlsx(box_phylum,"D:/桌面/R project/box_phylum.xlsx")
-#桌面转到R的操作：
-box_phylum_new<- read.delim("input/box_phylum_new.txt", header=TRUE, sep = "\t",na.strings="")
-#install.packages("reshape2")
-library(reshape2)
-box_phylum_new<-box_phylum_new[,-8]
-box_phylum_new<-melt(box_phylum_new,id.vars = "class")
-colnames(box_phylum_new)[3] <- "Abundance"
-colnames(box_phylum_new)[2] <- "Species"
-library(dplyr)
-library(rstatix)
+n_distinct(tax_df$Phylum)
+n_distinct(tax_df$Genus)
+n_distinct(tax_df$Species)
+#门属表
+df_g <- Genus.10$data_abund
+write_xlsx(df_g,"df_g.xlsx")
+df_p <- Phylum$data_abund
+write_xlsx(df_p,"df_p.xlsx")
+#core genus
+library("microbiome")
+library("reshape2")
+library("ggalluvial")
 library(ggpubr)
-ggplot(box_phylum_new, aes(x=class, y= Abundance,fill=class))+
-  geom_boxplot(alpha=0.3)+
-  geom_jitter(aes(color = class, shape = class), height = 0, width = 0.3, size = 3,alpha=0.6) + 
-  xlab("")+
-  facet_wrap(vars(Species),scales="free_y")+
-  scale_fill_manual(values = color2)+
-  scale_color_manual(values = color2)+
-  theme_bw()+stat_compare_means(method = "wilcox.test",comparisons = list(c("control", "positive")),label = "p.signif",show.legend = F)+
-  theme(legend.position="none",text = element_text(face = "bold"))
-ggsave2("top6.phylum.pdf",height =8,width = 8,useDingbats=FALSE)
+merge_samples_mean <- function(physeq, group){
+group_sums <- as.matrix(table(sample_data(physeq)[ ,group]))[,1]
+merged <- merge_samples(physeq, group)
+x <- as.matrix(otu_table(merged))
+if(taxa_are_rows(merged)){ x<-t(x) }
+out <- t(x/group_sums)
+out <- otu_table(out, taxa_are_rows = TRUE)
+otu_table(merged) <- out
+return(merged)
+}
+core_color <- c("#1D2FA1","#5061D0","#22755A","#099B8C","#AF5D33","#F48248","#F4A076","#EA8D0D","#F4AC48","#F4BF76")
+core.phyloseqin<-tax_glom(phyloseqin, 'Genus', NArm = F)#509
+core.phyloseqin.genus <- transform_sample_counts(core.phyloseqin, function(x) x/sum(x) * 100)
+core.phyloseqin.genus.t<- subset_taxa(core.phyloseqin.genus, !grepl("^GGB", Genus)&!grepl("_unclassified|_GGB|_sp", Genus))#172
+dim(otu_table(core.phyloseqin.genus.t))
+core.phyloseq.genus<-core(core.phyloseqin.genus.t,prevalence = 0.50,detection = 1)
+ps.merge.core <- merge_samples_mean(core.phyloseq.genus, "class")
+tax.table.core<-as.data.frame(tax_table(ps.merge.core))
+core.phyloseq.genus.df<-as.data.frame(otu_table(ps.merge.core))
+names.core<-row.names(core.phyloseq.genus.df)
+core.phyloseq.genus.df<-cbind(names.core,core.phyloseq.genus.df)
+sampleData<-reshape2::melt(core.phyloseq.genus.df,id=c(colnames(core.phyloseq.genus.df)[1]))
+newColNames<-c("OTU","Group","Abundance")
+colnames(sampleData)<-newColNames
+sampleData$OTU<-as.factor(sampleData$OTU)
+sampleData$Genus <-tax.table.core$Genus
+sampleData$Group<-factor(sampleData$Group,levels = c("control","positive"),labels =  c("control","positive"))
+
+ggplot(sampleData, aes(x = Group, y=Abundance,stratum = Genus, alluvium = Genus,fill = Genus, label = Genus))+ylab('Mean Relative Abundance')+xlab('')+
+  scale_fill_manual(values = core_color)+
+  geom_flow(stat = "alluvium", lode.guidance = "frontback",color = "white") +
+  geom_stratum(width = 1/3,linetype=1,size=0.5,alpha =0.8,color='white') +theme_bw()+
+   theme(text = element_text(face = "bold"),
+    panel.background = element_blank(),         # 去除背景
+    panel.grid.major = element_blank(),         # 去除主网格线
+    panel.grid.minor = element_blank(),         # 去除次网格线
+    panel.border = element_rect(color = "black", fill = NA,linewidth =1.5), # 显示外边框
+    strip.background = element_blank()
+    # legend.position = "none"  # 如需要隐藏图例可启用
+  )
+ggsave2("Figure.core.pdf",height=4,width=5)
+library()
+data<-psmelt(core.phyloseq.genus)
+df<-data %>% dplyr::select(!(4:9))
+df<-df%>%dplyr::select(!(5:9))
+df<-df%>%dplyr::select(!(1:2))
+ggplot(df, aes(x = class, y = Abundance, fill = class,colour = class)) +
+  geom_boxplot(alpha =0.3,width = 0.5,outlier.shape  = NA ) +
+  geom_point(position = position_jitter(width = 0.1,height =0.1),size = 2.5,alpha = 0.5 
+  ) + 
+  facet_wrap(~ Genus, ncol =4, scales = "free_y") + # 关键：按Genus分面，y轴自由缩放 
+  scale_color_manual(values =c("#101c5e","#5e101c"))+
+    scale_fill_manual(values =c("#101c5e","#5e101c"))+
+  labs(y = "Relative Abundance") +
+  theme_bw() + # 使用白色背景主题
+  theme(legend.position = "none", # 隐藏图例（因x轴已标注）
+        strip.text = element_text(face = "bold", size = 11), # 分面标题加粗
+        axis.text.x = element_text(angle = 0, hjust = 0.5,color = "black",face = "bold", size = 11))+ # 调整x轴标签 
+  stat_compare_means(method = "wilcox.test", # 使用非参数检验
+                     comparisons = list(c("control", "positive")), 
+                     label = "p.signif",
+                     hide.ns =F, size=4#,label.y = max(df$Abundance) * 1.005
+                     )
+
+ggsave2("core2.pdf",height =7,width =8,useDingbats=FALSE)
